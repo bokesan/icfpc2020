@@ -14,21 +14,21 @@ function pos {
 	done
 	((index=index+1))
 	if [ "$length" = 0 ]; then
-		printf "0 "
+		printf "0"
 	else
 		number="${input:$index:$length}"
-		printf "$((2#$number)) "
+		printf "$((2#$number))"
 		((index=index+$length))
 	fi
 }
 
 function list {
 	((index=index+2))
-	printf "( "
+	printf "("
 	check
 	while [ "${input:$index:2}" = "11" ]; do
 		((index=index+2))
-		printf ", "
+		printf ","
 		check
 	done
 	printf ")"
@@ -49,7 +49,7 @@ function check {
 		printf "nil "
 		;;
 	*)
-		echo "unknown prefix $pref"
+		echo "unknown prefix ${input:$index:2}"
 		;;
 	esac
 }
