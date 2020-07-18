@@ -48,6 +48,17 @@ function list {
 	printf "00"
 }
 
+function cons {
+	((index=index+1))
+	printf "11"
+	check
+	while [ "${input:$index:1}" = "," ]; do
+		((index=index+1))
+		check
+	done
+	((index=index+1))
+}
+
 function check {
 	case "${input:$index:1}" in
 	[0-9])
@@ -58,6 +69,9 @@ function check {
 		;;
 	"(")
 		list
+		;;
+	"[")
+		cons
 		;;
 	*)
 		echo "unknown element ${input:$index:1}"
