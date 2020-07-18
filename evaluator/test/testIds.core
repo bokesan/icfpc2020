@@ -1,0 +1,3 @@
+main = append foo' "\n";
+
+foo' = "Hello"

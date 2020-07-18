@@ -1,0 +1,3 @@
+-- statelessdraw = ap ap c ap ap b b ap ap b ap b ap cons 0 ap ap c ap ap b b cons ap ap c cons nil ap ap c ap ap b cons ap ap c cons nil nil
+-- main = ap ap ap interact statelessdraw nil ap ap cons 1 0
+main = ap tolist ap ap statelessdraw 14 15

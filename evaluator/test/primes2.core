@@ -1,0 +1,23 @@
+--
+-- sieve of erathostenes.
+--
+
+-- main :: String
+main = if numPrimes <= 0 then
+         putStr (showInts (sieve (enumFrom 2)))
+       else
+         putStr (showInts (take numPrimes (sieve (enumFrom 2))));
+
+numPrimes = case cmdLine of {
+              <0>     -> 1000;
+              <1> n _ -> stringToInt n
+            };
+
+-- showInts :: [Int] -> String
+showInts = foldr (\n s -> showsInt n ('\n' : s)) "";
+
+-- sieve :: [int] -> [int]
+sieve xs = case xs of {
+             <0> -> error "foo";
+             <1> h t -> h : sieve (filter (\n -> n % h /= 0) t)
+           }

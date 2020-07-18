@@ -1,0 +1,21 @@
+t x y = x;
+f x y = y;
+car x = case x of { <0> -> error "car of empty list"; <1> a b -> a };
+cdr x = case x of { <0> -> error "cdr of empty list"; <1> a b -> b };
+cons x y = x : y;
+nil = [];
+isnil x = case x of { <0> -> t; <1> _ _ -> f };
+
+cadr x = car (cdr x);
+caddr x = car (cdr (cdr x));
+
+modem x0 = x0;
+
+f38 x2 x0 = if0 (car x0) 
+             (cons (modem (cadr x0)) (cons (multipledraw (caddr x0)) nil))
+             (interact x2 (modem (cadr x0)) (send (caddr x0)));
+multipledraw x = x;
+
+-- statelessdraw  x0 x1 = cons 0 (cons nil (cons (cons x1 nil) nil) );
+
+interact protocol state vector = f38 protocol (protocol state vector)

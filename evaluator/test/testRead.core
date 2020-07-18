@@ -1,0 +1,14 @@
+main = showInts (map pint ("12" : "1234" : "-7" : []));
+
+-- showInts :: [Int] -> String
+showInts = foldr (\n s -> showsInt n ('\n' : s)) "";
+
+
+pint s = case readInt s of {
+           <0> -> error 1;
+           <1> h t -> if not (null t) then error 2
+                      else case h of {
+                             <0> f s -> if not (null s) then error 3
+                                        else f
+                           }
+         }

@@ -1,0 +1,74 @@
+
+-- safeQueen		:: [Int] -> Int -> Bool
+-- safeQueen oldqs newq    =  newq `notElem` oldqs && nodiag 1 oldqs
+--   where
+--      nodiag i []       =  True
+--      nodiag i (q:qs)   =  abs (newq-q) /= i && nodiag (i+1) qs
+
+-- safeQueen1 :: [Int] -> Int -> Bool
+safeQueen1 oldqs newq	=  h oldqs oldqs newq;
+h oldqs qqs q = case qqs of {
+                  <0> ->  nodiag1 q 1 oldqs;
+                  <1> q1 qs -> if q == q1 then False else h oldqs qs q
+                };
+
+nodiag1 nq i qqs =
+   case qqs of {
+     <0> -> True;
+     <1> q qs -> if (nq-q)==i then False
+                 else if (q-nq)==i then False
+                 else nodiag1 nq (succ i) qs
+   };
+
+-- nextQueen :: Int -> [Int] -> [[Int]]
+-- nextQueen n qs =  [ i:qs | i <- [1..n], safeQueen' qs i ]
+nextQueen n qs = nxq qs n [];
+nxq qs n r = if zero n then
+		r
+	     else if safeQueen1 qs n then
+		nxq qs (pred n) ((n:qs) : r)
+	     else
+		nxq qs (pred n) r;
+
+nextQueen1 n qs = nxq1 n qs 1;
+nxq1 n qs i = if i>n then []
+              else if safeQueen1 qs n then (i:qs) : nxq1 n qs (succ i)
+              else nxq1 n qs (succ i);
+
+-- isFull :: Int -> [a] -> Bool
+isFull n qs = lengthEq n qs;
+
+lengthEq n xs =
+   if zero n then
+      (null xs)
+   else
+      case xs of { <0> -> False; <1> h t -> lengthEq (pred n) t };
+
+
+depthQueen n =  filter (isFull n) (depthFirst (nextQueen n) []);
+
+-- breadthQueen n =  filter (isFull n) (breadthFirst (nextQueen n) [])
+
+-- depthFirst, breadthFirst :: (a -> [a]) -> a -> [a]
+
+depthFirst next x = dfs next (x:[]);
+dfs next xs = case xs of {
+                <0> -> [];
+                <1> y ys -> y : dfs next (append (next y) ys)
+              };
+
+
+-- breadthFirst next x = bfs next [x];
+-- bfs next xs = _LISTCASE []
+--                 (\y ys -> y : bfs next (ys ++ next y)) xs;
+
+
+
+main = putStrLn doit;
+
+doit = if length cmdLine /= 1 then
+         "usage: Queens <n>"
+       else
+         let { s = head cmdLine } in
+         let { n = stringToInt s } in
+         "Queens " ++ s ++ ": " ++ showsInt (length (depthQueen n)) " solutions."

@@ -1,0 +1,71 @@
+t x y = x;
+f x y = y;
+car x = x t;
+cdr x = x f;
+nil x = t;
+
+cons x y m = m x y;
+
+cadr x = car (cdr x);
+caddr x = car (cdr (cdr x));
+
+tolist x = if tag x == (neg 1) then x else (isnil x [] (tolist (car x) : tolist (cdr x)));
+
+konst2 c x y = c;
+isnil x = x (konst2 f);
+
+i x = x;
+k c x = x;
+b f g x = f (g x);
+c f x y = f y x;
+s f g x = f x (g x);
+inc x = x + 1;
+dec x = x - 1;
+neg x = 0 - x;
+add x y = x + y;
+mul x y = x * y;
+div x y = x / y;
+eq x y = if x == y then t else f;
+lt x y = if x < y then t else f;
+
+for n f x = if n == 0 then x else for (n - 1) f (f x);
+
+draw xs = xs;
+
+multipledraw xs = isnil xs xs (cons (draw (car xs)) (multipledraw (cdr xs)));
+
+galaxyvec = cons 3 2;
+galaxyiter n r = if n == 1 then galaxy r galaxyvec else galaxyiter (n - 1) (cadr (galaxy r galaxyvec));
+galaxyiter2 pts state = galaxyiter3 pts (cons 0 (cons state 0));
+galaxyiter3 pts r = case pts of {
+   <0> -> r;
+   <1> v vs -> galaxyiter3 vs (galaxy (cadr r) v)
+};
+diag x = cons x x;
+xgalaxyinp = [cons 0 (neg 4), cons 0 0, cons 0 (neg 4), cons 0 (neg 4), cons 0 0, cons 0 (neg 4), cons 0 0, cons 0 9,
+             cons 0 9, cons 0 9, cons 1 1, cons 0 0, cons 5 0, cons 5 0, cons 0 0,cons 0 0,
+             cons 0 0];
+-- galaxyinp = map diag [0,0,1,2,3,1,2,3,0];
+-- initialState = [1, [cons 0 5729893720451429816, cons 1 2845998317437402046]];
+-- initialState = cons 1 (cons (cons 11 nil) (cons 0 (cons nil nil)));
+-- galaxyinp = map diag [0,0];
+initialState = nil;
+-- galaxyinp = [cons 0 0, cons 0 4, cons 0 0, cons 1 0, cons 3 0, cons (neg 4) 0];
+-- galaxyinp = map (cons 0) [0,4,0,4,0,4,0,4,5,5,100,100,50,50];
+
+map f xs = case xs of { <0> -> xs; <1> h t -> f h : map f t };
+
+
+modem x0 = x0;
+
+f38 protocol exch = if0 (car exch) 
+                      (cons (modem (cadr exch)) (multipledraw (caddr exch)))
+                      (interact protocol (modem (cadr exch)) (send (caddr exch)));
+
+statelessdraw x0 x1 = cons 0 (cons nil (cons (cons x1 nil) nil) );
+-- stf  x0 x1 = cons 0 (cons (cons x1 x0) (cons (cons x1 x0) nil) nil);
+interact protocol state vector = f38 protocol (protocol state vector);
+galaxyinp = [cons 0 0, cons 0 0, cons 1 1, cons 2 2, cons 3 3, cons 1 1, cons 2 2, cons 3 3,
+             cons 0 0, cons 8 4, cons 2 (neg 8), cons 3 6, cons 0 (neg 14), cons (neg 4) 10,
+             cons 9 (neg 3), cons (neg 4) 10, cons 1 4,
+  cons 100 100 ]

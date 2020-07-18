@@ -1,0 +1,10 @@
+fac n = if n <= 2 then n else n * fac (n - 1);
+
+main = putStrLn doit;
+
+doit = if length cmdLine /= 1 then
+         "usage: fac <n>"
+       else
+         let { s = head cmdLine } in
+         let { n = stringToInt s } in
+         "fac " ++ s ++ ": " ++ showInt (fac n)

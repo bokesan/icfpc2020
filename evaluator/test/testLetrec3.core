@@ -1,0 +1,9 @@
+-- U f x = f (case x of { <0> -> error "U"; <1> h _ -> h })
+--           (case x of { <0> -> error "U"; <1> _ t -> t });
+
+main = letrec {
+         foo n = n + 1;
+         c y = bar y + 3;
+         bar k = foo k * 2
+       }
+       in showsInt (c 0) "\n"
