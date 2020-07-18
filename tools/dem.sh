@@ -31,6 +31,7 @@ function list {
 		printf ","
 		check
 	done
+	((index=index+2))
 	printf ")"
 }
 
