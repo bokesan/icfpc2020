@@ -1,3 +1,3 @@
 #!/bin/bash
-
-echo "Build not required"
+cd spacebot
+stack install --allow-different-user
