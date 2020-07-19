@@ -56,14 +56,22 @@ play serverUrl playerKey r | not (success r)  = putStrLn "Server returned error 
                                             play serverUrl playerKey r'
 
 turn :: String -> PlayerKey -> GameResponse -> IO GameResponse
-turn serverUrl playerKey r = let myShips = [n | (ship,cmds) <- shipsAndCommands (state r)
-                                              , shipRole ship == myRole (staticInfo r)
-                                              , let n = shipId ship ]
-                                 cmds = [Accelerate n (Vec 0 0) | n <- myShips]
+turn serverUrl playerKey r = let myShips = [ship | (ship,cmds) <- shipsAndCommands (state r)
+                                                 , shipRole ship == myRole (staticInfo r) ]
+                                 cmds = [orbit s | s <- myShips]
                     in do response <- send serverUrl (makeCommandsRequest playerKey cmds)
                           putStrLn ("cmds response: " ++ show response)
                           let r = parseResponse response
                           return r
+
+orbit :: Ship -> Command
+orbit s = let (Vec x y) = position s in
+          case (x < 0, y < 0) of
+            (False, False) -> Accelerate (shipId s) (Vec (-1) 1)
+            (False, True)  -> Accelerate (shipId s) (Vec 1 1)
+            (True, False)  -> Accelerate (shipId s) (Vec 1 (-1))
+            (True, True)   -> Accelerate (shipId s) (Vec (-1) (-1))
+              
 
 makeCommandsRequest :: PlayerKey -> [Command] -> SExpr
 makeCommandsRequest playerKey cmds = list [Int 4, playerKey, list (map toSExpr cmds) ]
