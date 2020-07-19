@@ -1,4 +1,5 @@
 module SExpr ( SExpr(..)
+             , ToSExpr(..)
              , car, car'
              , cdr, cdr'
              , nth
@@ -6,10 +7,18 @@ module SExpr ( SExpr(..)
              , list
              , list1
              , parseSExpr
+             , modulate
+             , demodulate
   ) where
 
 import Text.Parsec
 import Data.Functor
+
+class ToSExpr a where
+  toSExpr :: a -> SExpr
+
+instance ToSExpr Integer where
+  toSExpr = Int
 
 data SExpr = Int !Integer
            | Var !String
@@ -95,3 +104,45 @@ pcons = do _ <- char '('
            case end of
              Nothing -> return (list xs)
              Just x  -> return (list1 xs x)
+
+modulate :: SExpr -> String
+modulate (Int n) = modulateN n
+modulate Nil = "00"
+modulate (Var x) = error ("cant modulate Var " ++ x)
+modulate (Cons a b) = "11" ++ modulate a ++ modulate b
+
+modulateN :: Integer -> String
+modulateN n | n < 0     = "10" ++ go 1 0 (-n)
+            | otherwise = "01" ++ go 1 0 n
+  where
+    go lim nbits n | n < lim   = '0' : binary nbits n
+                   | otherwise = '1' : go (16 * lim) (nbits + 4) n
+    binary dig n = let s = toBinary n in
+                   replicate (dig - length s) '0' ++ s
+
+toBinary :: Integer -> String
+toBinary n | n == 0    = ""
+           | otherwise = let (n',bit) = quotRem n 2 in
+                         toBinary n' ++ (if bit == 0 then "0" else "1")
+
+fromBinary :: String -> Integer
+fromBinary s = go 0 s
+  where
+    go n "" = n
+    go n ('0':s) = go (2 * n) s
+    go n ('1':s) = go (2 * n + 1) s
+
+demodulate :: String -> Either String SExpr
+demodulate s = case go s of
+                 (e, "") -> Right e
+                 (e, rest) -> Left ("not fully demodulated: " ++ rest)
+  where
+    go ('0':'0':s) = (Nil, s)
+    go ('0':'1':s) = num s
+    go ('1':'0':s) = let (Int n,s') = num s in (Int (-n),s')
+    go ('1':'1':s) = let (a,s') = go s
+                         (b,s'') = go s'
+                     in (Cons a b, s'')
+    num s = num1 0 s
+    num1 nbits ('0':s) = let (n,s') = splitAt nbits s in (Int (fromBinary n), s')
+    num1 nbits ('1':s) = num1 (nbits+4) s

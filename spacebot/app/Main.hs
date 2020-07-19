@@ -9,12 +9,16 @@ import Data.List
 import SExpr
 import Types
 
+type PlayerKey = SExpr
+
 main = catch (
-    do (serverUrl : playerKey : _) <- getArgs
+    do (serverUrl' : playerKey' : _) <- getArgs
+       putStrLn ("Server URL: " ++ serverUrl')
+       putStrLn ("Player key: " ++ playerKey')
+       let serverUrl = serverUrl' ++ "/aliens/send"
+       let playerKey = Int (read playerKey')
        gameResponse1 <- send serverUrl (makeJoinRequest playerKey)
-       putStrLn ("join response: " ++ show gameResponse1)
        gameResponse2 <- send serverUrl (makeStartRequest playerKey gameResponse1)
-       putStrLn ("start response: " ++ show gameResponse2)
        let r = parseResponse gameResponse2
        play serverUrl playerKey r
     ) handler
@@ -22,32 +26,36 @@ main = catch (
         handler :: SomeException -> IO ()
         handler ex = putStrLn $ "Unexpected server response:\n" ++ show ex
 
-send :: String -> String -> IO SExpr
+send :: String -> SExpr -> IO SExpr
 send serverUrl body
-   = do request' <- parseRequest ("POST " ++ serverUrl)
-        let request = setRequestBodyLBS (BLU.fromString body) request'
+   = do putStrLn ("REQ:  " ++ show body)
+        let body' = modulate body
+        putStrLn ("REQ:  " ++ body')
+        request' <- parseRequest ("POST " ++ serverUrl)
+        let request = setRequestBodyLBS (BLU.fromString body') request'
         response <- httpLBS request
         let statuscode = show (getResponseStatusCode response)
         case statuscode of
-            "200" -> let resp = BLU.toString (getResponseBody response)
-                         sex = parseSExpr resp in
-                        case sex of
+            "200" -> do let resp = BLU.toString (getResponseBody response)
+                        putStrLn ("RESP: " ++ resp)
+                        case demodulate resp of
                           Left err -> do putStrLn ("parse error: " ++ show err)
                                          return serr
-                          Right expr -> return expr
+                          Right expr -> do putStrLn ("RESP: " ++ show expr)
+                                           return expr
             _ -> do putStrLn ("Unexpected server response:\nHTTP code: " ++ statuscode ++ "\nResponse body: " ++ BLU.toString (getResponseBody response))
                     return serr
 
 serr :: SExpr
 serr = Cons (Int 0) Nil
 
-play :: String -> String -> GameResponse -> IO ()
+play :: String -> PlayerKey -> GameResponse -> IO ()
 play serverUrl playerKey r | not (success r)  = putStrLn "Server returned error response"
                            | stage r == Ended = putStrLn "Game ended"
                            | otherwise = do r' <- turn serverUrl playerKey r
                                             play serverUrl playerKey r'
 
-turn :: String -> String -> GameResponse -> IO GameResponse
+turn :: String -> PlayerKey -> GameResponse -> IO GameResponse
 turn serverUrl playerKey r = let myShips = [n | (ship,cmds) <- shipsAndCommands (state r)
                                               , shipRole ship == myRole (staticInfo r)
                                               , let n = shipId ship ]
@@ -57,14 +65,14 @@ turn serverUrl playerKey r = let myShips = [n | (ship,cmds) <- shipsAndCommands 
                           let r = parseResponse response
                           return r
 
-makeCommandsRequest :: String -> [Command] -> String
-makeCommandsRequest playerKey cmds = "(4, " ++ playerKey ++ ", " ++ listReq cmds ++ ")"
+makeCommandsRequest :: PlayerKey -> [Command] -> SExpr
+makeCommandsRequest playerKey cmds = list [Int 4, playerKey, list (map toSExpr cmds) ]
 
-makeJoinRequest :: String -> String
-makeJoinRequest playerKey = "(2, " ++ playerKey ++ ", nil)"
+makeJoinRequest :: PlayerKey -> SExpr
+makeJoinRequest playerKey = list [Int 2, playerKey, Nil]
 
-makeStartRequest :: String -> SExpr -> String
-makeStartRequest playerKey joinResponse = "(3, " ++ playerKey ++ ", (-30, -30, 10, 10))"
+makeStartRequest :: PlayerKey -> SExpr -> SExpr
+makeStartRequest playerKey joinResponse = list [Int 3, playerKey, list [Int 0, Int 0, Int 0, Int 1] ]
 
 listReq :: Show a => [a] -> String
 listReq xs = '(' : intercalate ", " (map show xs) ++ ")"
