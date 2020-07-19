@@ -6,3 +6,4 @@ spacebot/.idea/modules.xml
 spacebot/.idea/vcs.xml
 spacebot/LICENSE
 spacebot/spacebot.iml
+*.log
