@@ -3,6 +3,7 @@ package de.bokeh.skred;
 import java.io.*;
 import java.lang.management.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import de.bokeh.skred.core.Parser;
 import de.bokeh.skred.input.*;
@@ -24,6 +25,7 @@ public class SkRed {
     private boolean justCompile = false;
     private boolean detailedStats = false;
     private boolean icfpc2020 = false;
+    private boolean testAll = false;
     private String mainDef = "main";
     private AppFactory appFactory;
 
@@ -36,25 +38,47 @@ public class SkRed {
         sk.logConfig();
         Node prog;
         if (sk.icfpc2020) {
-            // prog = sk.loadIcfp2020();
-            for (int x = -100; x <= 100; x++) {
-                System.out.println("Trying row " + x);
-                for (int y = -100; y <= 100; y++) {
-                    String result = sk.run(sk.loadIcfp2020(x, y));
-                    if (!result.startsWith("( 0")) {
-                        System.out.println("Found send at " + x + "," + y);
+            if (sk.testAll) {
+                Map<String, List<String>> results = new HashMap<>();
+                int rad = 25;
+                for (int x = -rad; x <= rad; x++) {
+                    System.out.println("Trying row " + x);
+                    for (int y = -rad; y <= rad; y++) {
+                        try {
+                            String result = sk.run(sk.loadIcfp2020(x, y));
+                            results.computeIfAbsent(result, k -> new ArrayList<>()).add("(" + x + "," + y + ")");
+                            if (!result.startsWith("( 0")) {
+                                System.out.println("Found send at " + x + "," + y);
+                            }
+                        } catch (RedException ex) {
+                            System.out.println("Error at " + x + "," + y);
+                        }
                     }
                 }
+                printResults(results);
+                return;
             }
-            return;
+            prog = sk.loadIcfp2020();
         } else {
             prog = sk.loadProgram();
         }
         if (prog != null) {
-            sk.run(prog);
+            System.out.println(sk.run(prog));
         }
     }
-    
+
+    private static void printResults(Map<String, List<String>> results) {
+        int i = 1;
+        for (Map.Entry<String, List<String>> e : results.entrySet()) {
+            System.out.format("Group %d (size %d, result length %d): %s.\n",
+                    i,
+                    e.getValue().size(),
+                    e.getKey().length(),
+                    String.join(", ", e.getValue()));
+            i++;
+        }
+    }
+
     private void logConfig() {
         if (stats != null) {
             stats.println("skred version " + Version.getLongVersionString());
@@ -110,13 +134,11 @@ public class SkRed {
         try (BufferedReader in = new BufferedReader(new FileReader("icfpc-prelude2.core"))) {
             preludeReader.readDefns(in, "icfpc-prelude2.core");
         }
-        String xc = x >= 0 ? Integer.toString(x) : ("(neg " + (-x) + ")");
-        String yc = x >= 0 ? Integer.toString(y) : ("(neg " + (-y) + ")");
         StringReader rd = new StringReader(
                 "galaxyinp = [cons 0 0, cons 0 0, cons 1 1, cons 2 2, cons 3 3, cons 1 1, cons 2 2, cons 3 3," +
                         " cons 0 0, cons 8 4, cons 2 (neg 8), cons 3 6, cons 0 (neg 14), cons (neg 4) 10," +
                         " cons 9 (neg 3), cons (neg 4) 10, cons 1 4," +
-                        " cons " + xc + " " + yc + "]");
+                        " cons " + lit(x) + " " + lit(y) + "]");
         preludeReader.readDefns(rd, "memory");
         for (String s : programFiles) {
             BufferedReader in = new BufferedReader(new FileReader(s));
@@ -139,6 +161,12 @@ public class SkRed {
         if (stats != null)
             stats.format("load+compile time: %.3fms\n", elapsed);
         return prog;
+    }
+
+    private static String lit(int n) {
+        if (n >= 0)
+            return Integer.toString(n);
+        return "(neg " + (-n) + ")";
     }
 
     private Node loadProgram() throws IOException {
@@ -196,45 +224,48 @@ public class SkRed {
         return isProperList(c, b);
     }
 
-    private void printList(RedContext c, Node value) {
+    private String evalList(RedContext c, Node graph) {
+        StringBuilder out = new StringBuilder();
+        printList(c, graph, out);
+        return out.toString();
+    }
+
+    private void printList(RedContext c, Node value, StringBuilder out) {
         c.push(value);
         c.eval();
         Node a = c.getTos();
         if (isNil(a)) {
-            System.out.print("nil");
+            out.append("nil");
         } else if (isProperList(c, a)) {
             String sep = "( ";
             while (isCons(a)) {
-                System.out.print(sep);
+                out.append(sep);
                 sep = " , ";
-                printList(c, a.getField(0));
+                printList(c, a.getField(0), out);
                 a = a.getField(1);
                 c.pop1();
                 c.push(a);
                 c.eval();
                 a = c.getTos();
             }
-            System.out.print(" )");
+            out.append(" )");
         } else if (!isCons(a)) {
-            System.out.print(a);
+            out.append(a);
         } else {
-            System.out.print("[");
-            printList(c, a.getField(0));
-            System.out.print(",");
-            printList(c, a.getField(1));
-            System.out.print("]");
+            out.append('[');
+            printList(c, a.getField(0), out);
+            out.append(',');
+            printList(c, a.getField(1), out);
+            out.append(']');
         }
     }
 
 
-    private void run(Node program) {
+    private String run(Node program) {
         long startTime = System.nanoTime();
         RedContext c = new RedContext(appFactory);
-        printList(c, program);
-        System.out.println();
-        if (icfpc2020) {
-            System.out.println("FINAL: " + c.getTos().toString(false, 100));
-        } else if (c.getTos().getTag() != 0) {
+        String result = evalList(c, program);
+        if (c.getTos().getTag() != 0) {
             System.err.println("IO error: " + c.getTos());
         }
         if (stats != null) {
@@ -277,6 +308,7 @@ public class SkRed {
             stats.flush();
             // stats.close();
         }
+        return result;
     }
 
     private void usage() {
@@ -304,6 +336,9 @@ public class SkRed {
             String s = args[i];
             if (s.equals("--app=ST")) {
                 appFactoryId = "ST";
+            }
+            else if (s.equals("--all")) {
+                testAll = true;
             }
             else if (s.equals("--app=Cond")) {
                 appFactoryId = "Cond";

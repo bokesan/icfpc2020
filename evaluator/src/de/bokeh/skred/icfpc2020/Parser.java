@@ -20,7 +20,6 @@ public class Parser extends AbstractSkReader {
 
     private String[] tok;
     private int pos;
-    private int line;
 
     public Parser(AppFactory appFactory) {
         super(appFactory);
@@ -36,8 +35,8 @@ public class Parser extends AbstractSkReader {
                 Function.valueOf("K'"));
     }
 
-    private String currentToken() {
-        return tok[pos];
+    private String nextToken() {
+        return tok[pos++];
     }
 
     @Override
@@ -54,7 +53,6 @@ public class Parser extends AbstractSkReader {
     }
 
     private void readDefn(String s, int line) {
-        this.line = line;
         tok = s.split(" ");
         if (!tok[1].equals("=")) {
             throw new AssertionError("Definition expected on line " + line);
@@ -69,58 +67,21 @@ public class Parser extends AbstractSkReader {
     }
 
     private Node parseExpr() {
-        String token = currentToken();
-        pos++;
-        switch (token) {
-            case "ap":
-                Node fun = parseExpr();
-                Node arg = parseExpr();
-                return appFactory.mkApp(fun, arg);
-            // case "t": return TRUE;
-            // case "f": return FALSE;
-            /*
-            case "mod":
-            case "dem":
-            case "i": return Function.valueOf("I");
-            case "k": return Function.valueOf("K");
-            case "b": return Function.valueOf("B");
-            case "c": return Function.valueOf("C");
-            case "s": return Function.valueOf("S");
-            case "inc": return Function.valueOf("succ");
-            case "dec": return Function.valueOf("pred");
-            case "neg": return Function.valueOf("negate");
-            case "add": return Function.valueOf("add");
-            case "mul": return Function.valueOf("mul");
-            case "div": return Function.valueOf("quot");
-            case "eq": return Function.valueOf("eqX");
-            case "lt": return Function.valueOf("ltX");
-
-             */
-            // case "cons": return CONS;
-            // case "car": return CAR;
-            // case "cdr": return CDR;
-            // case "nil": return NIL;
-            // case "isnil": return Function.valueOf("isnil");
+        String token = nextToken();
+        switch (token.charAt(0)) {
+            case '-':
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9':
+                BigInteger n = BigInteger.valueOf(Long.parseLong(token));
+                return Int.valueOf(n);
+            case 'a':
+                if (token.equals("ap")) {
+                    Node fun = parseExpr();
+                    Node arg = parseExpr();
+                    return appFactory.mkApp(fun, arg);
+                }
+                // FALL THRU
             default:
-                /*
-                Function f = Function.valueOf(token);
-                if (f != null) {
-                    System.out.println("DETECTED FUNCTION: " + token);
-                    return f;
-                }
-                 */
-                try {
-                    BigInteger n = BigInteger.valueOf(Long.parseLong(token));
-                    return Int.valueOf(n);
-                } catch (NumberFormatException e) {
-                    // FALL THROUGH
-                }
-                /*
-                if (!token.startsWith(":")) {
-                    throw new SyntaxError(line, pos - 1, "':name' expected, but got '" + token + "'");
-                }
-
-                 */
                 return Symbol.valueOf(token);
         }
     }

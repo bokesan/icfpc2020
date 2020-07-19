@@ -174,21 +174,21 @@ abstract public class Function extends Node {
                 return 1;
             if (o1.argCheckCount > o2.argCheckCount)
                 return -1;
-            if (o1.argCheckCount > o2.argCheckCount)
-                return -1;
+            if (o1.argCheckCount < o2.argCheckCount)
+                return 1;
             return o1.name.compareTo(o2.name);
         }
         
     }
     
     public static List<Stats> getStats() {
-        ArrayList<Stats> st = new ArrayList<Stats>();
+        ArrayList<Stats> st = new ArrayList<>();
         for (Function f : functionsByName.values()) {
             if (f.evalCount + f.unwindCount > 0) {
                 st.add(new Stats(f.getName(), f.evalCount, f.unwindCount, f.argCheckCount));
             }
         }
-        Collections.sort(st, new CmpStatsUnwindDesc());
+        st.sort(new CmpStatsUnwindDesc());
         return st;
     }
 
