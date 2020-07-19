@@ -64,4 +64,5 @@ f38 protocol exch = if0 (car exch)
 
 statelessdraw x0 x1 = cons 0 (cons nil (cons (cons x1 nil) nil) );
 -- stf  x0 x1 = cons 0 (cons (cons x1 x0) (cons (cons x1 x0) nil) nil);
-interact protocol state vector = f38 protocol (protocol state vector)
+interact protocol state vector = f38 protocol (protocol state vector);
+main = tolist (galaxyiter2 galaxyinp initialState)
