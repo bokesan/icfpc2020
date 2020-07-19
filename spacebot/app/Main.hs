@@ -12,7 +12,9 @@ import Types
 main = catch (
     do (serverUrl : playerKey : _) <- getArgs
        gameResponse1 <- send serverUrl (makeJoinRequest playerKey)
+       putStrLn ("join response: " ++ show gameResponse1)
        gameResponse2 <- send serverUrl (makeStartRequest playerKey gameResponse1)
+       putStrLn ("start response: " ++ show gameResponse2)
        let r = parseResponse gameResponse2
        play serverUrl playerKey r
     ) handler
@@ -33,7 +35,6 @@ send serverUrl body
                           Left err -> do putStrLn ("parse error: " ++ show err)
                                          return serr
                           Right expr -> return expr
-
             _ -> do putStrLn ("Unexpected server response:\nHTTP code: " ++ statuscode ++ "\nResponse body: " ++ BLU.toString (getResponseBody response))
                     return serr
 
@@ -52,6 +53,7 @@ turn serverUrl playerKey r = let myShips = [n | (ship,cmds) <- shipsAndCommands 
                                               , let n = shipId ship ]
                                  cmds = [Accelerate n (Vec 0 0) | n <- myShips]
                     in do response <- send serverUrl (makeCommandsRequest playerKey cmds)
+                          putStrLn ("cmds response: " ++ show response)
                           let r = parseResponse response
                           return r
 
