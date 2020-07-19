@@ -10,9 +10,10 @@ import SExpr
 import Types
 
 main = catch (
-    do (serverUrl : playerKey : _) <- getArgs
-       putStrLn ("Server URL: " ++ serverUrl)
+    do (serverUrl' : playerKey : _) <- getArgs
+       putStrLn ("Server URL: " ++ serverUrl')
        putStrLn ("Player key: " ++ playerKey)
+       let serverUrl = serverUrl' ++ "/aliens/send"
        gameResponse1 <- send serverUrl (makeJoinRequest playerKey)
        gameResponse2 <- send serverUrl (makeStartRequest playerKey gameResponse1)
        let r = parseResponse gameResponse2
