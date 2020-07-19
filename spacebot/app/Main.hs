@@ -72,7 +72,7 @@ makeJoinRequest :: PlayerKey -> SExpr
 makeJoinRequest playerKey = list [Int 2, playerKey, Nil]
 
 makeStartRequest :: PlayerKey -> SExpr -> SExpr
-makeStartRequest playerKey joinResponse = list [Int 3, playerKey, list [Int (45), Int (-30), Int 5, Int 1] ]
+makeStartRequest playerKey joinResponse = list [Int 3, playerKey, list [Int 0, Int 0, Int 0, Int 1] ]
 
 listReq :: Show a => [a] -> String
 listReq xs = '(' : intercalate ", " (map show xs) ++ ")"
