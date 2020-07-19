@@ -41,7 +41,8 @@ send serverUrl body
                         case demodulate resp of
                           Left err -> do putStrLn ("parse error: " ++ show err)
                                          return serr
-                          Right expr -> return expr
+                          Right expr -> do putStrLn ("RESP: " ++ show expr)
+                                           return expr
             _ -> do putStrLn ("Unexpected server response:\nHTTP code: " ++ statuscode ++ "\nResponse body: " ++ BLU.toString (getResponseBody response))
                     return serr
 

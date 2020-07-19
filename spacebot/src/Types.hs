@@ -13,9 +13,9 @@ instance ToSExpr Vec where
 
 data GameResponse = GameResponse {
                         success :: !Bool
-                      , stage :: !GameStage
-                      , staticInfo :: !StaticGameInfo
-                      , state :: !GameState
+                      , stage :: GameStage
+                      , staticInfo :: StaticGameInfo
+                      , state :: GameState
                       }
 
 instance Show GameResponse where
