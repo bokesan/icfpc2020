@@ -11,10 +11,10 @@ import Types
 
 main = catch (
     do (serverUrl : playerKey : _) <- getArgs
+       putStrLn ("Server URL: " ++ serverUrl)
+       putStrLn ("Player key: " ++ playerKey)
        gameResponse1 <- send serverUrl (makeJoinRequest playerKey)
-       putStrLn ("join response: " ++ show gameResponse1)
        gameResponse2 <- send serverUrl (makeStartRequest playerKey gameResponse1)
-       putStrLn ("start response: " ++ show gameResponse2)
        let r = parseResponse gameResponse2
        play serverUrl playerKey r
     ) handler
@@ -24,14 +24,15 @@ main = catch (
 
 send :: String -> String -> IO SExpr
 send serverUrl body
-   = do request' <- parseRequest ("POST " ++ serverUrl)
+   = do putStrLn ("REQ:  " ++ body)
+        request' <- parseRequest ("POST " ++ serverUrl)
         let request = setRequestBodyLBS (BLU.fromString body) request'
         response <- httpLBS request
         let statuscode = show (getResponseStatusCode response)
         case statuscode of
-            "200" -> let resp = BLU.toString (getResponseBody response)
-                         sex = parseSExpr resp in
-                        case sex of
+            "200" -> do let resp = BLU.toString (getResponseBody response)
+                        putStrLn ("RESP: " ++ resp)
+                        case parseSExpr resp of
                           Left err -> do putStrLn ("parse error: " ++ show err)
                                          return serr
                           Right expr -> return expr
