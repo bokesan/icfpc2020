@@ -5,7 +5,11 @@ import java.lang.management.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import de.bokeh.skred.core.Parser;
+import de.bokeh.skred.icfpc2020.ImageIndexer;
+import de.bokeh.skred.icfpc2020.Outputs;
+import de.bokeh.skred.icfpc2020.Point;
 import de.bokeh.skred.input.*;
 import de.bokeh.skred.red.*;
 
@@ -39,21 +43,47 @@ public class SkRed {
         Node prog;
         if (sk.icfpc2020) {
             if (sk.testAll) {
-                Map<String, List<String>> results = new HashMap<>();
-                int rad = 25;
-                for (int x = -rad; x <= rad; x++) {
-                    System.out.println("Trying row " + x);
-                    for (int y = -rad; y <= rad; y++) {
-                        try {
-                            String result = sk.run(sk.loadIcfp2020(x, y));
-                            results.computeIfAbsent(result, k -> new ArrayList<>()).add("(" + x + "," + y + ")");
-                            if (!result.startsWith("( 0")) {
-                                System.out.println("Found send at " + x + "," + y);
+                Map<String, List<Point>> results = new HashMap<>();
+                List<Point> vectors = ImmutableList.of(Point.ORIGIN);
+                String initial = sk.run(sk.loadIcfp2020(vectors));
+                results.put(initial, vectors);
+                Map<String, List<Point>> newResults = new HashMap<>();
+                newResults.put(initial, vectors);
+                for (;;) {
+                    Map<String, List<Point>> added = new HashMap<>();
+                    for (Map.Entry<String, List<Point>> result : newResults.entrySet()) {
+                        int[] bounds = Outputs.getBounds(result.getKey());
+                        System.out.format("Testing %d (size %d, inputs %d, bounds %s)\n",
+                            result.getKey().hashCode(),
+                            result.getKey().length(),
+                            result.getValue().size(),
+                            Arrays.toString(bounds));
+                        ImageIndexer xindices = new ImageIndexer(bounds[0], bounds[2]);
+                        ImageIndexer yindices = new ImageIndexer(bounds[1], bounds[3]);
+                        for (int x : xindices) {
+                            for (int y : yindices) {
+                                Point point = Point.of(x, y);
+                                try {
+                                    List<Point> input = new ArrayList<>(result.getValue());
+                                    input.add(point);
+                                    String output = sk.run(sk.loadIcfp2020(input));
+                                    if (!results.containsKey(output)) {
+                                        results.put(output, input);
+                                        if (output.startsWith("( 0"))
+                                            added.put(output, input);
+                                        System.out.format("  %d, size %d with %s\n",
+                                                output.hashCode(),
+                                                output.length(), point);
+                                    }
+                                } catch (RedException ex) {
+                                    System.err.println("Error at " + x + "," + y);
+                                }
                             }
-                        } catch (RedException ex) {
-                            System.out.println("Error at " + x + "," + y);
                         }
                     }
+                    if (added.isEmpty())
+                        break;
+                    newResults = added;
                 }
                 printResults(results);
                 return;
@@ -67,15 +97,11 @@ public class SkRed {
         }
     }
 
-    private static void printResults(Map<String, List<String>> results) {
-        int i = 1;
-        for (Map.Entry<String, List<String>> e : results.entrySet()) {
-            System.out.format("Group %d (size %d, result length %d): %s.\n",
-                    i,
-                    e.getValue().size(),
-                    e.getKey().length(),
-                    String.join(", ", e.getValue()));
-            i++;
+    private static void printResults(Map<String, List<Point>> results) {
+        for (Map.Entry<String, List<Point>> e : results.entrySet()) {
+            System.out.println(e.getValue());
+            System.out.println(e.getKey());
+            System.out.println();
         }
     }
 
@@ -126,7 +152,7 @@ public class SkRed {
         return prog;
     }
 
-    private Node loadIcfp2020(int x, int y) throws IOException {
+    private Node loadIcfp2020(List<Point> vectors) throws IOException {
         Function.init(evalProjections);
         SkReader r = new de.bokeh.skred.icfpc2020.Parser(appFactory);
         long startTime = System.nanoTime();
@@ -135,10 +161,9 @@ public class SkRed {
             preludeReader.readDefns(in, "icfpc-prelude2.core");
         }
         StringReader rd = new StringReader(
-                "galaxyinp = [cons 0 0, cons 0 0, cons 1 1, cons 2 2, cons 3 3, cons 1 1, cons 2 2, cons 3 3," +
-                        " cons 0 0, cons 8 4, cons 2 (neg 8), cons 3 6, cons 0 (neg 14), cons (neg 4) 10," +
-                        " cons 9 (neg 3), cons (neg 4) 10, cons 1 4," +
-                        " cons " + lit(x) + " " + lit(y) + "]");
+                "galaxyinp = [" +
+                vectors.stream().map(SkRed::asCons).collect(Collectors.joining(",")) +
+                "]");
         preludeReader.readDefns(rd, "memory");
         for (String s : programFiles) {
             BufferedReader in = new BufferedReader(new FileReader(s));
@@ -167,6 +192,10 @@ public class SkRed {
         if (n >= 0)
             return Integer.toString(n);
         return "(neg " + (-n) + ")";
+    }
+
+    private static String asCons(Point p) {
+        return "cons " + lit(p.getX()) + " " + lit(p.getY());
     }
 
     private Node loadProgram() throws IOException {
