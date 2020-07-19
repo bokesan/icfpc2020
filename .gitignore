@@ -1,1 +1,8 @@
 Dockerfile
+spacebot/spacebot.cabal
+spacebot/Setup.hs
+spacebot/.idea/misc.xml
+spacebot/.idea/modules.xml
+spacebot/.idea/vcs.xml
+spacebot/LICENSE
+spacebot/spacebot.iml
