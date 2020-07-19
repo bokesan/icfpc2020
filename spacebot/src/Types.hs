@@ -8,6 +8,9 @@ parseVec :: SExpr -> Vec
 parseVec (Cons (Int x) (Cons (Int y) _)) = Vec x y
 parseVec x = error ("not a vector: " ++ show x)
 
+instance ToSExpr Vec where
+  toSExpr (Vec x y) = list [Int x, Int y]
+
 data GameResponse = GameResponse {
                         success :: !Bool
                       , stage :: !GameStage
@@ -46,6 +49,10 @@ data Role = Attacker | Defender deriving (Eq, Ord, Enum)
 instance Show Role where
   showsPrec _ s = shows (fromEnum s)
 
+instance ToSExpr Role where
+  toSExpr Attacker = Int 0
+  toSExpr Defender = Int 1
+
 data StaticGameInfo = StaticGameInfo { myRole :: !Role }
 
 instance Show StaticGameInfo where
@@ -66,6 +73,9 @@ parseShip e = Ship { shipRole = decodeEnum (car e)
                    , velocity = parseVec (nth 3 e)
                    }
 
+-- instance ToSExpr Ship where
+--   toSExpr s = list [toSExpr (shipRole s), toSExpr (shipId s), toSExpr (position s), toSExpr (velocity s)]
+
 data Command = Accelerate !Integer !Vec
              | Detonate !Integer
              | Shoot !Integer !Vec
@@ -76,6 +86,11 @@ parseCommand cmd@(Cons (Int n) (Cons (Int id) rest)) =
       0 -> Accelerate id (parseVec (car rest))
       1 -> Detonate id
       2 -> Shoot id (parseVec (car rest))
+
+instance ToSExpr Command where
+  toSExpr (Accelerate ship vec) = list [Int 0, toSExpr ship, toSExpr vec]
+  toSExpr (Detonate ship)       = list [Int 1, toSExpr ship]
+  toSExpr (Shoot ship vec)      = list [Int 2, toSExpr ship, toSExpr vec]
 
 instance Show Command where
     showsPrec _ (Accelerate ship vec) = showString "(0, " . shows ship . showString ", "
