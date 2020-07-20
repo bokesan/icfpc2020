@@ -59,9 +59,9 @@ play serverUrl playerKey r | not (success r)  = putStrLn "Server returned error 
 
 turn :: String -> PlayerKey -> GameResponse -> IO GameResponse
 turn serverUrl playerKey r =
-   let (myShips, enemies) = partition (\ship -> shipRole ship == myRole (staticInfo r))
-                                      (map fst (shipsAndCommands (state r))) 
-       cmds = [orbit s | s <- myShips]
+   let (myShips, enemies) = partition (\ship -> shipRole (fst ship) == myRole (staticInfo r))
+                                      (shipsAndCommands (state r)) 
+       cmds = [orbit s | (s,_) <- myShips]
    in do putStrLn ("My ships: " ++ show myShips)
          putStrLn ("Enemies: " ++ show enemies)
          response <- send serverUrl (makeCommandsRequest playerKey cmds)

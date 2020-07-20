@@ -73,14 +73,16 @@ parseShip e = Ship { shipRole = decodeEnum (car e)
 data Command = Accelerate !Integer !Vec
              | Detonate !Integer
              | Shoot !Integer !Vec SExpr
+             | UnknownCommand !Integer
              deriving (Show)
-             
+
 parseCommand :: Integer -> SExpr -> Command
 parseCommand id (Cons (Int cmd) rest) =
     case cmd of
       0 -> Accelerate id (parseVec (car rest))
       1 -> Detonate id
       2 -> Shoot id (parseVec (car rest)) (nth 1 rest)
+      _ -> UnknownCommand cmd
 
 instance ToSExpr Command where
   toSExpr (Accelerate ship vec) = list [Int 0, toSExpr ship, toSExpr vec]
