@@ -30,14 +30,14 @@ send :: String -> SExpr -> IO SExpr
 send serverUrl body
    = do putStrLn ("REQ:  " ++ show body)
         let body' = modulate body
-        putStrLn ("REQ:  " ++ body')
+        -- putStrLn ("REQ:  " ++ body')
         request' <- parseRequest ("POST " ++ serverUrl)
         let request = setRequestBodyLBS (BLU.fromString body') request'
         response <- httpLBS request
         let statuscode = show (getResponseStatusCode response)
         case statuscode of
             "200" -> do let resp = BLU.toString (getResponseBody response)
-                        putStrLn ("RESP: " ++ resp)
+                        -- putStrLn ("RESP: " ++ resp)
                         case demodulate resp of
                           Left err -> do putStrLn ("parse error: " ++ show err)
                                          return serr
@@ -60,7 +60,6 @@ turn serverUrl playerKey r = let myShips = [ship | (ship,cmds) <- shipsAndComman
                                                  , shipRole ship == myRole (staticInfo r) ]
                                  cmds = [orbit s | s <- myShips]
                     in do response <- send serverUrl (makeCommandsRequest playerKey cmds)
-                          putStrLn ("cmds response: " ++ show response)
                           let r = parseResponse response
                           return r
 
