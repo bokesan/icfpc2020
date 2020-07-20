@@ -2,12 +2,9 @@
   
 Team: Rotten Lambdas  
 
-Members:  
-  Daniel Kauke,
-  Christoph Breitkopf,  
-  Jan Dreske.
+Members: Daniel Kauke, Christoph Breitkopf, Jan Dreske.
 
-We live in Hannover and Vienna. We met in Hannover for the contest.
+We live in Hannover and Vienna, but met in Hannover for the contest.
 
 ## Galaxy evaluator
 
@@ -19,10 +16,10 @@ We also implemented a Python program to display the resulting images.
 
 Being a bit frustrated by the "puzzle" approach we later implemented a
 fully automatic way to extract the images from the galaxy message
-without user interaction (auto_solve.sh).
+without user interaction (`auto_solve.sh`).
 
 ## Game bot
 
 Written in Haskell. We just implemented the protocol so that
-out bot wont timeout or crash. We did not get around to implement
+our bot won't timeout or crash. We did not get around to implement
 a strategy.
