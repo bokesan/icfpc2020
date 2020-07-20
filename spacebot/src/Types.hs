@@ -5,11 +5,11 @@ import SExpr
 data Vec = Vec !Integer !Integer deriving (Eq, Ord, Show)
 
 parseVec :: SExpr -> Vec
-parseVec (Cons (Int x) (Cons (Int y) _)) = Vec x y
+parseVec (Cons (Int x) (Int y)) = Vec x y
 parseVec x = error ("not a vector: " ++ show x)
 
 instance ToSExpr Vec where
-  toSExpr (Vec x y) = list [Int x, Int y]
+  toSExpr (Vec x y) = Cons (Int x) (Int y)
 
 data GameResponse = GameResponse {
                         success :: !Bool
