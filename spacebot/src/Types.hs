@@ -75,9 +75,9 @@ data Command = Accelerate !Integer !Vec
              | Shoot !Integer !Vec SExpr
              deriving (Show)
              
-parseCommand :: SExpr -> Command
-parseCommand cmd@(Cons (Int n) (Cons (Int id) rest)) =
-    case n of
+parseCommand :: Integer -> SExpr -> Command
+parseCommand id (Cons (Int cmd) rest) =
+    case cmd of
       0 -> Accelerate id (parseVec (car rest))
       1 -> Detonate id
       2 -> Shoot id (parseVec (car rest)) (nth 1 rest)
@@ -114,7 +114,9 @@ parseState e = GameState { gameTick = intValue (car e)
                          , stX1 = nth 1 e
                          , shipsAndCommands = parseList sandc (nth 2 e) }
   where
-    sandc (Cons ship (Cons cmds _)) = (parseShip ship, parseList parseCommand cmds)
+    sandc (Cons ship (Cons cmds _)) = let shp = parseShip ship
+                                          sid = shipId shp
+                                      in (shp, parseList (parseCommand sid) cmds)
 
 parseList :: (SExpr -> a) -> SExpr -> [a]
 parseList _      Nil = []
