@@ -20,6 +20,7 @@ main = catch (
        gameResponse1 <- send serverUrl (makeJoinRequest playerKey)
        gameResponse2 <- send serverUrl (makeStartRequest playerKey gameResponse1)
        let r = parseResponse gameResponse2
+       putStrLn ("Static game info: " ++ show (staticInfo r))
        play serverUrl playerKey r
     ) handler
     where
@@ -52,16 +53,19 @@ serr = Cons (Int 0) Nil
 play :: String -> PlayerKey -> GameResponse -> IO ()
 play serverUrl playerKey r | not (success r)  = putStrLn "Server returned error response"
                            | stage r == Ended = putStrLn "Game ended"
-                           | otherwise = do r' <- turn serverUrl playerKey r
+                           | otherwise = do putStrLn ("State: " ++ show (state r))
+                                            r' <- turn serverUrl playerKey r
                                             play serverUrl playerKey r'
 
 turn :: String -> PlayerKey -> GameResponse -> IO GameResponse
-turn serverUrl playerKey r = let myShips = [ship | (ship,cmds) <- shipsAndCommands (state r)
-                                                 , shipRole ship == myRole (staticInfo r) ]
-                                 cmds = [orbit s | s <- myShips]
-                    in do response <- send serverUrl (makeCommandsRequest playerKey cmds)
-                          let r = parseResponse response
-                          return r
+turn serverUrl playerKey r =
+   let (myShips, enemies) = partition (\ship -> shipRole ship == myRole (staticInfo r))
+                                      (map fst (shipsAndCommands (state r))) 
+       cmds = [orbit s | s <- myShips]
+   in do putStrLn ("My ships: " ++ show myShips)
+         putStrLn ("Enemies: " ++ show enemies)
+         response <- send serverUrl (makeCommandsRequest playerKey cmds)
+         return (parseResponse response)
 
 orbit :: Ship -> Command
 orbit s = let (Vec x y) = position s in

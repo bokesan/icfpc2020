@@ -19,51 +19,41 @@ data GameResponse = GameResponse {
                       }
 
 instance Show GameResponse where
-  showsPrec _ r | success r    = showString "(1, "
-                               . shows (stage r)
-                               . showString ", "
-                               . shows (staticInfo r)
-                               . showString ", "
-                               . shows (state r)
-                               . showChar ')'
-                | otherwise = showString "(0)"
+  showsPrec _ r | success r = showString "stage: " . shows (stage r)
+                            . showString ", " . shows (state r)
+                | otherwise = showString "GameResponse-Error"
 
 
-data GameStage = Setup | Playing | Ended deriving (Eq, Ord, Enum)
-
-instance Show GameStage where
-  showsPrec _ s = shows (fromEnum s)
+data GameStage = Setup | Playing | Ended deriving (Eq, Ord, Enum, Show)
 
 data GameState = GameState {
                      gameTick :: !Integer
+                   , stX1 :: SExpr
                    , shipsAndCommands :: [(Ship, [Command])]
-                 }
+                 } deriving (Show)
 
-instance Show GameState where
-  showsPrec _ s = showChar '(' . shows (gameTick s)
-                . showString ", x1, "
-                . shows (shipsAndCommands s) . showChar ')'
-
-data Role = Attacker | Defender deriving (Eq, Ord, Enum)
-
-instance Show Role where
-  showsPrec _ s = shows (fromEnum s)
+data Role = Attacker | Defender deriving (Eq, Ord, Enum, Show)
 
 instance ToSExpr Role where
   toSExpr Attacker = Int 0
   toSExpr Defender = Int 1
 
-data StaticGameInfo = StaticGameInfo { myRole :: !Role }
-
-instance Show StaticGameInfo where
-   showsPrec _ g = showString "(x0, " . shows (myRole g)
-                 . showString ", x2, x3)"
+data StaticGameInfo = StaticGameInfo { g0 :: SExpr
+                                     , myRole :: !Role
+                                     , g2 :: SExpr
+                                     , g3 :: SExpr
+                                     , g4 :: SExpr
+                                     } deriving (Show)
 
 
 data Ship = Ship { shipRole :: !Role
                  , shipId :: !Integer
                  , position :: !Vec
                  , velocity :: !Vec
+                 , x4 :: SExpr
+                 , x5 :: SExpr
+                 , x6 :: SExpr
+                 , x7 :: SExpr
                  } deriving (Show)
 
 parseShip :: SExpr -> Ship
@@ -71,6 +61,10 @@ parseShip e = Ship { shipRole = decodeEnum (car e)
                    , shipId = intValue (nth 1 e)
                    , position = parseVec (nth 2 e)
                    , velocity = parseVec (nth 3 e)
+                   , x4 = nth 4 e
+                   , x5 = nth 5 e
+                   , x6 = nth 6 e
+                   , x7 = nth 7 e
                    }
 
 -- instance ToSExpr Ship where
@@ -78,26 +72,20 @@ parseShip e = Ship { shipRole = decodeEnum (car e)
 
 data Command = Accelerate !Integer !Vec
              | Detonate !Integer
-             | Shoot !Integer !Vec
-
+             | Shoot !Integer !Vec SExpr
+             deriving (Show)
+             
 parseCommand :: SExpr -> Command
 parseCommand cmd@(Cons (Int n) (Cons (Int id) rest)) =
     case n of
       0 -> Accelerate id (parseVec (car rest))
       1 -> Detonate id
-      2 -> Shoot id (parseVec (car rest))
+      2 -> Shoot id (parseVec (car rest)) (nth 1 rest)
 
 instance ToSExpr Command where
   toSExpr (Accelerate ship vec) = list [Int 0, toSExpr ship, toSExpr vec]
   toSExpr (Detonate ship)       = list [Int 1, toSExpr ship]
-  toSExpr (Shoot ship vec)      = list [Int 2, toSExpr ship, toSExpr vec]
-
-instance Show Command where
-    showsPrec _ (Accelerate ship vec) = showString "(0, " . shows ship . showString ", "
-                                      . shows vec . showChar ')'
-    showsPrec _ (Detonate ship) = showString "(1, " . shows ship . showChar ')'
-    showsPrec _ (Shoot ship vec) = showString "(2, " . shows ship . showString ", "
-                                 . shows vec . showChar ')'
+  toSExpr (Shoot ship vec sX3)  = list [Int 2, toSExpr ship, toSExpr vec, sX3]
 
 parseResponse :: SExpr -> GameResponse
 parseResponse (Cons (Int 1) e) = parseSuccess e
@@ -115,10 +103,15 @@ parseSuccess e = GameResponse {
     state = parseState (nth 2 e)
 
 parseStaticInfo :: SExpr -> StaticGameInfo
-parseStaticInfo e = StaticGameInfo $ decodeEnum (nth 1 e)
+parseStaticInfo e = StaticGameInfo{ myRole = decodeEnum (nth 1 e),
+                                    g0 = nth 0 e,
+                                    g2 = nth 2 e,
+                                    g3 = nth 3 e,
+                                    g4 = nth 4 e }
 
 parseState :: SExpr -> GameState
 parseState e = GameState { gameTick = intValue (car e)
+                         , stX1 = nth 1 e
                          , shipsAndCommands = parseList sandc (nth 2 e) }
   where
     sandc (Cons ship (Cons cmds _)) = (parseShip ship, parseList parseCommand cmds)
