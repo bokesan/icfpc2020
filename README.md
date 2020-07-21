@@ -14,9 +14,11 @@ to read and evaluate the alien messages (text form only).
 
 We also implemented a Python program to display the resulting images.
 
-Being a bit frustrated by the "puzzle" approach we later implemented a
-fully automatic way to extract the images from the galaxy message
-without user interaction (`auto_solve.sh`).
+Being a bit frustrated by the "puzzle" approach we later tried to
+implement a fully automatic way to extract the images from the galaxy message
+without user interaction (`auto_solve.sh`). This gets to the spriral
+galaxy image and the first send instruction reasonably fast, but
+after that point too many new images appear and it becomed too slow.
 
 ## Game bot
 
