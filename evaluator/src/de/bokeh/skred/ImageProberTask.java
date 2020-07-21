@@ -29,8 +29,9 @@ public class ImageProberTask implements Runnable {
     @Override
     public void run() {
         int[] bounds = Outputs.getBounds(state);
-        System.out.format("Testing %d (size %d, inputs %d, bounds %s)\n",
-                state.hashCode(),
+        String key = resultKey(state);
+        System.out.format("Testing %s (size %d, inputs %d, bounds %s)\n",
+                key,
                 state.length(),
                 vectors.size(),
                 Arrays.toString(bounds));
@@ -42,18 +43,18 @@ public class ImageProberTask implements Runnable {
                 vectors.add(point);
                 try {
                     String output = sk.run(sk.loadIcfp2020(vectors));
-                    if (!results.containsKey(output)) {
-                        results.put(output, vectors);
+                    if (results.putIfAbsent(output, vectors) == null) {
                         if (output.startsWith("( 0")) {
-                            System.out.format("Adding to queue: %d, size %d with %s\n",
-                                    output.hashCode(),
+                            System.out.format("    %s - adding to queue: %s, size %d with %s\n",
+                                    key,
+                                    resultKey(output),
                                     output.length(), point);
                             executorService.submit(
                                     new ImageProberTask(results, sk, executorService, output, vectors)
                             );
                         } else {
-                            System.out.format("Found SEND: %d, size %d with %s\n",
-                                    output.hashCode(),
+                            System.out.format("    Found SEND: %s, size %d with %s\n",
+                                    resultKey(output),
                                     output.length(), point);
                         }
                     }
@@ -63,5 +64,10 @@ public class ImageProberTask implements Runnable {
                 vectors.remove(vectors.size() - 1);
             }
         }
+    }
+
+    private static String resultKey(String result) {
+        int hash = result.hashCode();
+        return Integer.toUnsignedString(hash, Character.MAX_RADIX);
     }
 }
