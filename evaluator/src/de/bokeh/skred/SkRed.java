@@ -3,6 +3,9 @@ package de.bokeh.skred;
 import java.io.*;
 import java.lang.management.*;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
@@ -43,48 +46,14 @@ public class SkRed {
         Node prog;
         if (sk.icfpc2020) {
             if (sk.testAll) {
-                Map<String, List<Point>> results = new HashMap<>();
+                int numOfCores = Runtime.getRuntime().availableProcessors();
+                ExecutorService executorService = Executors.newFixedThreadPool(numOfCores);
+                Map<String, List<Point>> results = Collections.synchronizedMap(new HashMap<>());
                 List<Point> vectors = ImmutableList.of(Point.ORIGIN);
                 String initial = sk.run(sk.loadIcfp2020(vectors));
                 results.put(initial, vectors);
-                Map<String, List<Point>> newResults = new HashMap<>();
-                newResults.put(initial, vectors);
-                for (;;) {
-                    Map<String, List<Point>> added = new HashMap<>();
-                    for (Map.Entry<String, List<Point>> result : newResults.entrySet()) {
-                        int[] bounds = Outputs.getBounds(result.getKey());
-                        System.out.format("Testing %d (size %d, inputs %d, bounds %s)\n",
-                            result.getKey().hashCode(),
-                            result.getKey().length(),
-                            result.getValue().size(),
-                            Arrays.toString(bounds));
-                        ImageIndexer xindices = new ImageIndexer(bounds[0], bounds[2]);
-                        ImageIndexer yindices = new ImageIndexer(bounds[1], bounds[3]);
-                        for (int x : xindices) {
-                            for (int y : yindices) {
-                                Point point = Point.of(x, y);
-                                try {
-                                    List<Point> input = new ArrayList<>(result.getValue());
-                                    input.add(point);
-                                    String output = sk.run(sk.loadIcfp2020(input));
-                                    if (!results.containsKey(output)) {
-                                        results.put(output, input);
-                                        if (output.startsWith("( 0"))
-                                            added.put(output, input);
-                                        System.out.format("  %d, size %d with %s\n",
-                                                output.hashCode(),
-                                                output.length(), point);
-                                    }
-                                } catch (RedException ex) {
-                                    System.err.println("Error at " + x + "," + y);
-                                }
-                            }
-                        }
-                    }
-                    if (added.isEmpty())
-                        break;
-                    newResults = added;
-                }
+                executorService.submit(new ImageProberTask(results, sk, executorService, initial, vectors));
+                // wait how?
                 printResults(results);
                 return;
             }
@@ -152,7 +121,7 @@ public class SkRed {
         return prog;
     }
 
-    private Node loadIcfp2020(List<Point> vectors) throws IOException {
+    Node loadIcfp2020(List<Point> vectors) throws IOException {
         Function.init(evalProjections);
         SkReader r = new de.bokeh.skred.icfpc2020.Parser(appFactory);
         long startTime = System.nanoTime();
@@ -290,7 +259,7 @@ public class SkRed {
     }
 
 
-    private String run(Node program) {
+    String run(Node program) {
         long startTime = System.nanoTime();
         RedContext c = new RedContext(appFactory);
         String result = evalList(c, program);
