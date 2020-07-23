@@ -54,7 +54,7 @@ public class SkRed {
                 results.put(initial, vectors);
                 executorService.submit(new ImageProberTask(results, sk, executorService, initial, vectors));
                 // wait how?
-                printResults(results);
+                // printResults(results);
                 return;
             }
             prog = sk.loadIcfp2020();

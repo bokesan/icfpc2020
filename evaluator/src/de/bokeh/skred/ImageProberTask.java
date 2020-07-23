@@ -6,9 +6,11 @@ import de.bokeh.skred.icfpc2020.Outputs;
 import de.bokeh.skred.icfpc2020.Point;
 import de.bokeh.skred.red.RedException;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class ImageProberTask implements Runnable {
 
@@ -44,7 +46,9 @@ public class ImageProberTask implements Runnable {
                 try {
                     String output = sk.run(sk.loadIcfp2020(vectors));
                     if (results.putIfAbsent(output, vectors) == null) {
+                        String prefix;
                         if (output.startsWith("( 0")) {
+                            prefix = "I";
                             System.out.format("    %s - adding to queue: %s, size %d with %s\n",
                                     key,
                                     resultKey(output),
@@ -52,17 +56,35 @@ public class ImageProberTask implements Runnable {
                             executorService.submit(
                                     new ImageProberTask(results, sk, executorService, output, vectors)
                             );
+                            showJobsInfo(executorService);
                         } else {
+                            prefix = "S";
                             System.out.format("    Found SEND: %s, size %d with %s\n",
                                     resultKey(output),
                                     output.length(), point);
                         }
+                        String fileName = String.format("%s-%03d-%s.txt", prefix, vectors.size(), resultKey(output));
+                        try (BufferedWriter w = UniqueFile.newBufferedWriter(fileName, 100)) {
+                            w.write(vectors.toString());
+                            w.newLine();
+                            w.write(output);
+                            w.newLine();
+                        }
                     }
                 } catch (RedException | IOException ex) {
-                    System.err.println("Error at " + x + "," + y);
+                    System.err.println("Error at " + point);
                 }
                 vectors.remove(vectors.size() - 1);
             }
+        }
+    }
+
+    private void showJobsInfo(ExecutorService executorService) {
+        if (executorService instanceof ThreadPoolExecutor) {
+            ThreadPoolExecutor e = (ThreadPoolExecutor) executorService;
+            long completed = e.getCompletedTaskCount();
+            long total = e.getTaskCount();
+            System.out.format("Tasks: %d completed, %d active+pending\n", completed, total - completed);
         }
     }
 
