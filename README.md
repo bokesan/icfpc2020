@@ -1,5 +1,5 @@
-# icfpc2020
-  
+# ICFP Programming Contest 2020
+
 Team: Rotten Lambdas
 
 Members: Daniel Kauke, Christoph Breitkopf, Jan Dreske.
