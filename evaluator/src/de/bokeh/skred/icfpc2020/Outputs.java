@@ -36,4 +36,22 @@ public class Outputs {
         return new int[]{minX, minY, maxX, maxY};
     }
 
+    public static int[] getBounds(Data images) {
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        for (int i = 0; i < images.length(); i++) {
+            Data image = images.nth(i);
+            for (int k = 0; k < image.length(); k++) {
+                Point p = image.nth(k).toPoint();
+                minX = Math.min(minX, p.getX());
+                minY = Math.min(minY, p.getY());
+                maxX = Math.max(maxX, p.getX());
+                maxY = Math.max(maxY, p.getY());
+            }
+        }
+        return new int[]{minX, minY, maxX, maxY};
+    }
+
 }

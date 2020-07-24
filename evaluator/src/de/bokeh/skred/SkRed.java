@@ -5,16 +5,16 @@ import java.lang.management.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import de.bokeh.skred.core.Parser;
-import de.bokeh.skred.icfpc2020.ImageIndexer;
-import de.bokeh.skred.icfpc2020.Outputs;
 import de.bokeh.skred.icfpc2020.Point;
 import de.bokeh.skred.input.*;
 import de.bokeh.skred.red.*;
+
+import static de.bokeh.skred.icfpc2020.Data.parse;
+import static de.bokeh.skred.red.Data.makeString;
 
 
 /**
@@ -48,10 +48,11 @@ public class SkRed {
             if (sk.testAll) {
                 int numOfCores = Runtime.getRuntime().availableProcessors();
                 ExecutorService executorService = Executors.newFixedThreadPool(numOfCores);
-                Map<String, List<Point>> results = Collections.synchronizedMap(new HashMap<>());
+                Map<de.bokeh.skred.icfpc2020.Data, List<Point>> results = Collections.synchronizedMap(new HashMap<>());
                 List<Point> vectors = ImmutableList.of(Point.ORIGIN);
-                String initial = sk.run(sk.loadIcfp2020(vectors));
-                results.put(initial, vectors);
+                String initialString = sk.run(sk.loadIcfp2020(vectors));
+                de.bokeh.skred.icfpc2020.Data initial = parse(initialString);
+                results.put(initial.nth(1), vectors);
                 executorService.submit(new ImageProberTask(results, sk, executorService, initial, vectors));
                 // wait how?
                 // printResults(results);
@@ -420,7 +421,7 @@ public class SkRed {
     private static Node makeStringList(List<String> cmdArgs, AppFactory appFactory) {
         List<Node> args = new ArrayList<>();
         for (String s : cmdArgs) {
-            args.add(Data.makeString(s));
+            args.add(makeString(s));
         }
         return appFactory.mkList(args);
     }
