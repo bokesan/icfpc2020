@@ -5,9 +5,7 @@ import java.lang.management.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
 import de.bokeh.skred.core.Parser;
 import de.bokeh.skred.icfpc2020.Point;
 import de.bokeh.skred.input.*;
@@ -223,16 +221,17 @@ public class SkRed {
     }
 
     private static boolean isProperList(RedContext c, Node a) {
-        if (isNil(a))
-            return true;
-        if (!isCons(a)) {
-            return false;
+        for (;;) {
+            if (isNil(a))
+                return true;
+            if (!isCons(a)) {
+                return false;
+            }
+            c.push(a.getField(1));
+            c.eval();
+            a = c.getTos();
+            c.pop1();
         }
-        c.push(a.getField(1));
-        c.eval();
-        Node b = c.getTos();
-        c.pop1();
-        return isProperList(c, b);
     }
 
     private String evalList(RedContext c, Node graph) {
