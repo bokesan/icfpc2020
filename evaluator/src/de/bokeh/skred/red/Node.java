@@ -53,7 +53,7 @@ public abstract class Node {
     }
     
     public int getTag() {
-        throw new RedException("getTag not defined: " + this);
+        return -2;
     }
     
     public Node getField(int n) {

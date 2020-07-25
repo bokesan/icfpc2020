@@ -43,4 +43,8 @@ public final class Int extends ValueNode {
         return value.toString();
     }
 
+    @Override
+    public int getTag() {
+        return -1;
+    }
 }

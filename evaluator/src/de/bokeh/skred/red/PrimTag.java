@@ -12,13 +12,7 @@ public class PrimTag extends Function {
         c.setTos(con);
         c.eval();
         con = c.getTos();
-        int tag;
-        if (con instanceof Data)
-            tag = con.getTag();
-        else if (con instanceof Int)
-            tag = -1;
-        else
-            tag = -2;
+        int tag = con.getTag();
         Node redex = c.get1();
         redex.overwriteInd(Int.valueOf(tag));
         c.pop1();
