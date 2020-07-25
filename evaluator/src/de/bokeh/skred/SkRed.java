@@ -35,6 +35,7 @@ public class SkRed {
     private boolean testAll = false;
     private String mainDef = "main";
     private AppFactory appFactory;
+    private final long startTime;
 
     public static void main(String[] args) throws IOException {
         SkRed sk = new SkRed();
@@ -49,9 +50,9 @@ public class SkRed {
                 int numOfCores = Runtime.getRuntime().availableProcessors();
                 ExecutorService executorService = Executors.newFixedThreadPool(numOfCores);
                 Map<de.bokeh.skred.icfpc2020.Data, List<Point>> results = Collections.synchronizedMap(new HashMap<>());
-                List<Point> vectors = ImmutableList.of(Point.ORIGIN);
-                String initialString = sk.run(sk.loadIcfp2020(vectors));
+                String initialString = sk.run(sk.loadIcfp2020(de.bokeh.skred.icfpc2020.Data.list(), Point.ORIGIN));
                 de.bokeh.skred.icfpc2020.Data initial = parse(initialString);
+                List<Point> vectors = Collections.singletonList(Point.ORIGIN);
                 results.put(initial.nth(1), vectors);
                 executorService.submit(new ImageProberTask(results, sk, executorService, initial, vectors));
                 // wait how?
@@ -65,6 +66,18 @@ public class SkRed {
         if (prog != null) {
             System.out.println(sk.run(prog));
         }
+    }
+
+    private SkRed() {
+        startTime = System.nanoTime();
+    }
+
+    public long getElapsedNanos() {
+        return System.nanoTime() - startTime;
+    }
+
+    public double getElapsedSeconds() {
+        return getElapsedNanos() / 1.0e9;
     }
 
     private static void printResults(Map<String, List<Point>> results) {
@@ -122,7 +135,7 @@ public class SkRed {
         return prog;
     }
 
-    Node loadIcfp2020(List<Point> vectors) throws IOException {
+    Node loadIcfp2020(de.bokeh.skred.icfpc2020.Data initialState, Point vector) throws IOException {
         Function.init(evalProjections);
         SkReader r = new de.bokeh.skred.icfpc2020.Parser(appFactory);
         long startTime = System.nanoTime();
@@ -130,10 +143,9 @@ public class SkRed {
         try (BufferedReader in = new BufferedReader(new FileReader("icfpc-prelude2.core"))) {
             preludeReader.readDefns(in, "icfpc-prelude2.core");
         }
-        StringReader rd = new StringReader(
-                "galaxyinp = [" +
-                vectors.stream().map(SkRed::asCons).collect(Collectors.joining(",")) +
-                "]");
+        String params = "main = tolist (galaxy " + initialState.asCore() + " (" + asCons(vector) + "))";
+        // System.out.println(params);
+        StringReader rd = new StringReader(params);
         preludeReader.readDefns(rd, "memory");
         for (String s : programFiles) {
             BufferedReader in = new BufferedReader(new FileReader(s));

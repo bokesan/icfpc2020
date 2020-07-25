@@ -49,7 +49,7 @@ xgalaxyinp = [cons 0 (neg 4), cons 0 0, cons 0 (neg 4), cons 0 (neg 4), cons 0 0
 -- initialState = [1, [cons 0 5729893720451429816, cons 1 2845998317437402046]];
 -- initialState = cons 1 (cons (cons 11 nil) (cons 0 (cons nil nil)));
 -- galaxyinp = map diag [0,0];
-initialState = nil;
+-- initialState = nil;
 -- galaxyinp = [cons 0 0, cons 0 4, cons 0 0, cons 1 0, cons 3 0, cons (neg 4) 0];
 -- galaxyinp = map (cons 0) [0,4,0,4,0,4,0,4,5,5,100,100,50,50];
 
@@ -64,5 +64,5 @@ f38 protocol exch = if0 (car exch)
 
 statelessdraw x0 x1 = cons 0 (cons nil (cons (cons x1 nil) nil) );
 -- stf  x0 x1 = cons 0 (cons (cons x1 x0) (cons (cons x1 x0) nil) nil);
-interact protocol state vector = f38 protocol (protocol state vector);
-main = tolist (galaxyiter2 galaxyinp initialState)
+interact protocol state vector = f38 protocol (protocol state vector)
+-- main = tolist (galaxyiter2 galaxyinp initialState)

@@ -192,4 +192,26 @@ public class Data {
         }
     }
 
+    public String asCore() {
+        switch (type) {
+            case NUM:
+                if (numValue >= 0) {
+                    return Long.toString(numValue);
+                } else {
+                    return "(neg " + -numValue + ")";
+                }
+            case VEC:
+                return "(cons " + numValue + " " + second + ")";
+            case LIST:
+                String s = "nil";
+                for (int i = elems.size() - 1; i >= 0; i--) {
+                    s = "(cons " + elems.get(i).asCore() + " " + s + ")";
+                }
+                return s;
+            case NIL:
+                return "nil";
+            default:
+                throw new AssertionError();
+        }
+    }
 }
